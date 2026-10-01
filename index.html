@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#000000">
+<title>By JosssBC - For My Friends</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Indie Flower: frases y carta (manuscrita). Rajdhani: títulos (técnica, más sobria) -->
+<link href="https://fonts.googleapis.com/css2?family=Indie+Flower&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- ================= CSS ================= -->
+<style>
+:root{
+  --neon:#33b5ff; --soft:#b9e6ff;
+  --script:'Indie Flower','Bradley Hand','Segoe Script',cursive;
+  --tech:'Rajdhani','Segoe UI',system-ui,sans-serif;
+  --logo-w:200px;              /* ← TAMAÑO DEL LOGO de la pantalla inicial */
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;background:#000;overflow:hidden;touch-action:none;
+  user-select:none;-webkit-user-select:none;font-family:var(--script);color:var(--soft)}
+#stage{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:grab}
+#stage.drag{cursor:grabbing}
+
+/* ---- Pantalla inicial ---- */
+#start-screen{position:fixed;top:0;left:0;width:100%;height:100%;z-index:30;cursor:pointer;
+  display:flex;justify-content:center;align-items:center;flex-direction:column;gap:2rem;
+  background:radial-gradient(circle at center,#001033 0%,#000000 100%);transition:opacity 1.4s ease}
+#start-screen.hidden{opacity:0;pointer-events:none}
+/* Logo propio: cambia el src en el HTML y el ancho en --logo-w */
+#start-logo{width:var(--logo-w);max-width:70vw;height:auto;filter:drop-shadow(0 0 18px rgba(51,181,255,.7));
+  animation:float 4s ease-in-out infinite}
+#start-text{display:flex;align-items:center;gap:1.1rem;font:500 clamp(1.05rem,3.4vw,1.6rem)/1 var(--tech);
+  letter-spacing:.28em;color:var(--soft);text-shadow:0 0 14px var(--neon);animation:pulse 2.8s ease-in-out infinite}
+#start-text::before,#start-text::after{content:"";width:clamp(28px,8vw,80px);height:1px;
+  background:linear-gradient(90deg,transparent,var(--neon))}
+#start-text::after{transform:scaleX(-1)}
+@keyframes pulse{0%,100%{opacity:.55;transform:scale(.99)}50%{opacity:1;transform:scale(1.02)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+/* ---- Título superior ---- */
+#title{position:fixed;top:calc(16px + env(safe-area-inset-top,0px));left:0;width:100%;z-index:10;
+  text-align:center;padding:0 1rem;pointer-events:none;
+  font:500 clamp(1.15rem,4vw,2.3rem)/1.2 var(--tech);letter-spacing:.14em;color:#fff;
+  text-shadow:0 0 10px rgba(51,181,255,.9),0 0 34px rgba(0,119,255,.8);
+  opacity:0;transform:translateY(-12px);transition:opacity 2s ease 1s,transform 2s ease 1s}
+#title::after{content:"";display:block;width:min(240px,50vw);height:1px;margin:.7rem auto 0;
+  background:linear-gradient(90deg,transparent,var(--neon),transparent)}
+#title.show{opacity:1;transform:none}
+
+/* ---- Botón de la carta (ícono SVG) ---- */
+#open-btn{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:15;
+  width:54px;height:54px;border-radius:16px;display:grid;place-items:center;cursor:pointer;
+  background:rgba(10,60,120,.55);border:1px solid rgba(150,215,255,.5);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 0 22px rgba(51,181,255,.55);
+  opacity:0;pointer-events:none;transition:opacity 1s 2s,box-shadow .3s}
+#open-btn:hover{box-shadow:0 0 34px var(--neon)}
+#open-btn.show{opacity:1;pointer-events:auto}
+#open-btn svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---- Carta ---- */
+#love-letter-overlay{position:fixed;inset:0;z-index:20;display:flex;justify-content:center;align-items:center;
+  background:rgba(0,4,20,.6);opacity:0;pointer-events:none;transition:opacity 1.2s ease;padding:1rem}
+#love-letter-overlay.show{opacity:1;pointer-events:auto}
+#love-letter-card{position:relative;overflow:hidden auto;width:min(92vw,500px);max-height:86vh;
+  padding:clamp(1.5rem,5vw,2.6rem);border-radius:20px;text-align:center;
+  border:1px solid rgba(120,210,255,.3);
+  background:linear-gradient(160deg,rgba(16,66,96,.88),rgba(0,10,40,.95));
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 0 40px rgba(51,181,255,.35);
+  opacity:0;transform:scale(.85) translateY(18px);
+  transition:opacity 1.2s ease,transform 1.2s cubic-bezier(.2,.9,.3,1);animation:glow 3.5s ease-in-out infinite}
+#love-letter-overlay.show #love-letter-card{opacity:1;transform:none}
+@keyframes glow{0%,100%{box-shadow:0 0 30px rgba(51,181,255,.28)}50%{box-shadow:0 0 64px rgba(51,181,255,.6)}}
+#love-letter-card::before{content:"";position:absolute;top:-50%;left:-60%;width:40%;height:200%;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);transform:rotate(18deg);
+  animation:shine 6s ease-in-out infinite}
+@keyframes shine{0%,55%{left:-60%}100%{left:130%}}
+#love-letter-card h2{font:500 clamp(1.4rem,5vw,1.9rem)/1.2 var(--tech);letter-spacing:.12em;color:#fff;
+  margin-bottom:1.1rem;text-shadow:0 0 12px var(--neon)}
+#love-letter-card p{font-size:clamp(1.05rem,3.5vw,1.25rem);line-height:1.65;margin-bottom:.9rem;text-shadow:0 0 8px rgba(51,181,255,.45)}
+#close-btn{margin-top:.8rem;padding:.55rem 1.8rem;font:500 1rem var(--tech);letter-spacing:.18em;color:#fff;cursor:pointer;
+  border-radius:10px;background:rgba(51,181,255,.14);border:1px solid rgba(51,181,255,.8)}
+#close-btn:hover{background:rgba(51,181,255,.32)}
+#hint{position:fixed;left:0;width:100%;bottom:calc(22px + env(safe-area-inset-bottom,0px));z-index:10;text-align:center;pointer-events:none;font:500 1rem var(--tech);letter-spacing:.22em;color:var(--soft);text-shadow:0 0 10px var(--neon);opacity:0;transition:opacity 1.2s}
+#hint.show{opacity:.85}
+@media (prefers-reduced-motion:reduce){#start-logo,#start-text,#love-letter-card,#love-letter-card::before{animation:none}}
+</style>
+</head>
+
+<!-- ================= HTML ================= -->
+<body>
+<audio id="music" src="cancion.mp3" preload="auto" loop></audio>
+<canvas id="stage"></canvas>
+
+<div id="start-screen">
+  <!-- ▼ TU LOGO: cambia src por tu imagen (PNG con fondo transparente). Si no existe, se oculta solo. -->
+  <img id="start-logo" src="logo.png" alt="" onerror="this.style.display='none'">
+  <div id="start-text">Toca Aquí Mi Rey</div>
+</div>
+
+<h1 id="title">Este detalle es para todos nosotros brothers</h1>
+
+<div id="hint"></div>
+
+<button id="open-btn" aria-label="Abrir carta">
+  <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7 8.5 6.5L20.5 7"/></svg>
+</button>
+
+<div id="love-letter-overlay">
+  <div id="love-letter-card">
+    <h2>Para Nosotros</h2>
+    <p>Quiero que sepas lo importante que es que formes parte de mis amigos.</p>
+    <p>Gracias por estar ahí cuando lo necesito, por las risas compartidas y por soñar en grande como hombres por los motores de nuestros sueños.</p>
+    <p>De: Josss.</p>
+	<p><em>-Si puedes imaginarlo, puedes programarlo🌐‍👨‍💻</em></p>
+    <button id="close-btn">Cerrar</button>
+  </div>
+</div>
+
+<!-- ================= JAVASCRIPT ================= -->
+<script>
+(() => {
+'use strict';
+const cv = document.getElementById('stage'), ctx = cv.getContext('2d');
+const $ = id => document.getElementById(id);
+
+/* =====================================================
+   ▼▼ TUS AUTOS Y MOTOS (10 espacios) ▼▼
+   src  : ruta de tu imagen (PNG transparente, vista lateral)
+   size : ancho en px en computadora cuando el auto está a distancia media
+          (al girar, se ve más grande de frente y más pequeño al fondo)
+   y    : altura sobre el "planeta": 0 (arriba) a 1 (abajo). null = aleatoria
+   face : hacia dónde mira tu imagen: 'right' o 'left'
+   ===================================================== */
+const CARS = [
+  {src:'auto1.png',  size:340, y:.22, face:'right'},
+  {src:'auto2.png',  size:260, y:.40, face:'right'},
+  {src:'auto3.png',  size:420, y:.72, face:'right'},
+  {src:'auto4.png',  size:200, y:.58, face:'right'},
+  {src:'auto5.png',  size:300, y:.85, face:'right'},
+  {src:'auto6.png',  size:180, y:.30, face:'right'},
+  {src:'auto7.png',  size:360, y:.50, face:'right'},
+  {src:'auto8.png',  size:220, y:.18, face:'right'},
+  {src:'auto9.png',  size:280, y:.66, face:'right'},
+  {src:'auto10.png', size:190, y:null, face:'right'}
+];
+const MOBILE_SCALE = .55;     // tamaño relativo en celulares
+const SENS = .0055;           // sensibilidad al arrastrar
+const AUTO_SPIN = .0012;      // giro automático cuando nadie toca (0 = desactivar)
+const PHRASES = ['Sigamos soñando en grande','Eres un gran hombre','Gracias por formar parte de mi vida',
+  'Quiero que sepas cuánto importas','Nunca te rindas','Aquí siempre tienes un amigo','Gracias por estar para mi',
+  'Todo esfuerzo tiene recompensa.','Feliz día de los Hot Wheels','Los límites existen para romperse',
+  'Eres único','El éxito se construye, no se espera','El progreso es mejor que la perfección','Un gracias que no necesita fecha',
+  'La mejor versión siempre está por construirse','La voluntad mueve montañas','Nunca dejar de avanzar','La calma también es poder'];
+const SHAPES = ['🏍️','🏎️','♥'];
+const LETTER_DELAY = 16000;
+
+let W, H, cx, cy, UX, UY, bg, started = false, mob = 1;
+const R = (a,b) => a + Math.random()*(b-a);
+let stars = [], words = [], rides = [], things = [], pts = [], orbit = [], targets = [], shapeIdx = 0;
+
+/* ---------- Cámara 360°: giro (rotY/rotX), inercia y zoom ---------- */
+let rotY = 0, rotX = -.32, vY = 0, vX = 0, zoom = 1, dragging = false, lx = 0, ly = 0;
+const CAM = 2.6;                                   // distancia de la cámara al centro
+let cY = 1, sY = 0, cX = 1, sX = 0;
+/* Proyecta un punto 3D (x,y,z) a pantalla y lo guarda en o.sx, o.sy, o.s (escala), o.z (profundidad) */
+function pr(o, x, y, z){
+  const x1 = x*cY - z*sY, z1 = x*sY + z*cY, y1 = y*cX - z1*sX, z2 = y*sX + z1*cX, s = CAM/(CAM - z2);
+  o.sx = cx + x1*UX*s; o.sy = cy + y1*UY*s; o.s = s; o.z = z2;
+}
+const sph = (t) => { const c = Math.cos(t.lat); return [t.r*c*Math.sin(t.lon), -t.r*Math.sin(t.lat), t.r*c*Math.cos(t.lon)]; };
+
+/* ---------- Carga de tus imágenes ---------- */
+CARS.forEach(c => { if (!c.src) return; const im = new Image();
+  im.onload = () => { c.im = im; placeRides(); }; im.src = c.src; });
+
+function placeRides(){
+  if (!W) return;
+  const ok = CARS.filter(c => c.im);
+  rides = ok.map((c, i) => { const w = c.size*mob;
+    return {car:true, im:c.im, w, h:w*c.im.naturalHeight/c.im.naturalWidth, face:c.face || 'right',
+      lon:i*2.39996, lat:((.5 - (c.y != null ? c.y : R(.15,.85)))*1.1), r:R(.95,1.1),
+      dir:Math.random() < .5 ? -1 : 1, dl:R(.0015,.004)}; });     // cada auto también orbita
+  things = words.concat(rides);
+}
+
+function build(){
+  mob = W < 700 ? MOBILE_SCALE : 1;
+  stars = Array.from({length:W < 700 ? 220 : 380}, () => { const a = R(0,6.283), b = Math.asin(R(-1,1)), r = R(1.3,1.7);
+    return {x:r*Math.cos(b)*Math.sin(a), y:r*Math.sin(b), z:r*Math.cos(b)*Math.cos(a), p:R(0,6), sz:R(.6,1.6)}; });
+  words = Array.from({length:W < 700 ? 24 : 40}, (_, i) => ({car:false,
+    t:(i%3 ? '' : '♥ ') + PHRASES[i % PHRASES.length], fs:R(13,30), lon:R(0,6.283), lat:Math.asin(R(-.8,.8)),
+    r:R(.7,1.3), dir:1, dl:R(-.0012,.0012)}));
+  bg = ctx.createRadialGradient(cx,cy,0,cx,cy,Math.max(W,H)*.7);
+  bg.addColorStop(0,'#0f63b5'); bg.addColorStop(.45,'#05255a'); bg.addColorStop(1,'#00040f');
+  orbit = Array.from({length:W < 700 ? 90 : 170}, () => ({a:R(0,6.28), k:(Math.random()*3)|0, sp:R(.002,.007)}));
+  placeRides(); morph(true);
+}
+
+/* Figura central de partículas (muestreo de emojis) */
+function sample(ch){
+  const c = document.createElement('canvas'); c.width = 320; c.height = 200; const g = c.getContext('2d');
+  g.font = '150px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(ch,160,105);
+  const d = g.getImageData(0,0,320,200).data, st = W < 700 ? 4 : 3, out = [];
+  for (let y = 0; y < 200; y += st) for (let x = 0; x < 320; x += st) if (d[(y*320+x)*4+3] > 120) out.push([x/320-.5, y/200-.5]);
+  return out.sort(() => Math.random() - .5);
+}
+function morph(first){
+  const S = Math.min(W*.7, 560), t = sample(SHAPES[shapeIdx]);
+  if (t.length < 40) { shapeIdx = (shapeIdx+1) % SHAPES.length; return first ? morph(true) : 0; }
+  targets = t.map(([x,y]) => [cx + x*S, cy + y*S*.625]);
+  if (first || !pts.length) pts = targets.map(() => ({x:R(0,W), y:R(0,H)}));
+  while (pts.length < targets.length) pts.push({x:cx, y:cy});
+  pts.length = targets.length;
+  if (!first) pts.forEach(p => { p.x += R(-60,60); p.y += R(-60,60); });
+}
+
+/* ---------- Dibujo de frases y autos ya proyectados ---------- */
+const FONT = '"Indie Flower","Bradley Hand","Segoe Script",cursive';
+function drawThing(t){
+  if (t.s < .25) return;
+  const a = Math.max(.12, Math.min(1, .55 + t.z*.45));            // lo lejano se atenúa
+  ctx.globalAlpha = a;
+  if (t.car) {
+    const w = t.w*t.s, h = t.h*t.s;
+    // Volteo suave según hacia dónde avanza (al pasar de lado "gira" el auto)
+    const side = Math.max(-1, Math.min(1, t.z*4 + .0001))*t.dir*(t.face === 'right' ? 1 : -1);
+    ctx.shadowBlur = 14; ctx.shadowColor = 'rgba(51,181,255,.55)';
+    ctx.save(); ctx.translate(t.sx, t.sy); ctx.scale(Math.sign(side || 1)*Math.max(.25, Math.abs(side)), 1);
+    ctx.drawImage(t.im, -w/2, -h/2, w, h); ctx.restore();
+  } else {
+    ctx.font = (t.fs*mob*t.s|0) + 'px ' + FONT; ctx.fillStyle = t.s > 1.05 ? '#fff' : '#bfe8ff';
+    if (t.s > 1.1) { ctx.shadowBlur = 10; ctx.shadowColor = '#33b5ff'; } else ctx.shadowBlur = 0;
+    ctx.fillText(t.t, t.sx, t.sy);
+  }
+  ctx.shadowBlur = 0;
+}
+
+/* ---------- Bucle de animación ---------- */
+const tmp = {}, RINGS = [.55,.9,1.25];
+let last = performance.now();
+function frame(now){
+  const dt = Math.min((now-last)/16.67, 3); last = now;
+
+  // Inercia y giro automático
+  if (!dragging) { rotY += (vY + AUTO_SPIN)*dt; rotX += vX*dt; vY *= Math.pow(.94,dt); vX *= Math.pow(.94,dt); }
+  rotX = Math.max(-1.3, Math.min(1.3, rotX));
+  cY = Math.cos(rotY); sY = Math.sin(rotY); cX = Math.cos(rotX); sX = Math.sin(rotX);
+  UX = W*.40*zoom; UY = H*.42*zoom;
+
+  ctx.globalAlpha = 1; ctx.shadowBlur = 0; ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+
+  // Estrellas 3D (rotan con el planeta)
+  ctx.fillStyle = '#fff';
+  for (const s of stars) { pr(tmp, s.x, s.y, s.z); if (tmp.s > 3 || tmp.s < 0) continue;
+    ctx.globalAlpha = (.3 + .7*Math.abs(Math.sin(now/700 + s.p)))*Math.max(.2, Math.min(1, .6 + tmp.z*.4));
+    ctx.fillRect(tmp.sx, tmp.sy, s.sz*tmp.s, s.sz*tmp.s); }
+
+  // Anillos orbitales 3D
+  ctx.strokeStyle = 'rgba(80,190,255,.3)'; ctx.lineWidth = 2; ctx.globalAlpha = 1;
+  for (const r of RINGS) { ctx.beginPath();
+    for (let j = 0; j <= 56; j++) { const a = j/56*6.2832; pr(tmp, r*Math.cos(a), 0, r*Math.sin(a)); j ? ctx.lineTo(tmp.sx,tmp.sy) : ctx.moveTo(tmp.sx,tmp.sy); }
+    ctx.stroke(); }
+
+  // Proyecta frases y autos; ordena por profundidad (lo lejano primero)
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const t of things) { t.lon += t.dir*t.dl*dt; const p = sph(t); pr(t, p[0], p[1], p[2]); }
+  things.sort((a,b) => a.z - b.z);
+  let i = 0; while (i < things.length && things[i].z < 0) drawThing(things[i++]);
+
+  // Figura central + partículas orbitales (brillo aditivo)
+  ctx.globalCompositeOperation = 'lighter';
+  const k = started ? 1 : .01;
+  pts.forEach((p, n) => { const t = targets[n]; if (!t) return;
+    p.x += (t[0] + Math.sin(now/500 + n)*2 - p.x)*.05*dt*k; p.y += (t[1] + Math.cos(now/450 + n)*2 - p.y)*.05*dt*k;
+    ctx.globalAlpha = 1; ctx.fillStyle = n % 5 ? 'rgba(160,225,255,.9)' : 'rgba(255,255,255,.95)'; ctx.fillRect(p.x, p.y, 2, 2); });
+  ctx.fillStyle = 'rgba(120,210,255,.85)';
+  for (const o of orbit) { o.a += o.sp*dt; const r = RINGS[o.k]; pr(tmp, r*Math.cos(o.a), 0, r*Math.sin(o.a));
+    ctx.globalAlpha = Math.max(.25, Math.min(1, .6 + tmp.z*.4)); ctx.fillRect(tmp.sx, tmp.sy, 2.2*tmp.s, 2.2*tmp.s); }
+  ctx.globalCompositeOperation = 'source-over';
+
+  while (i < things.length) drawThing(things[i++]);          // lo cercano va al frente
+  ctx.globalAlpha = 1;
+  requestAnimationFrame(frame);
+}
+
+/* ---------- Controles: arrastrar (mouse o dedo), rueda para zoom ---------- */
+cv.addEventListener('pointerdown', e => { dragging = true; lx = e.clientX; ly = e.clientY; vY = vX = 0;
+  cv.setPointerCapture(e.pointerId); cv.classList.add('drag'); $('hint').classList.remove('show'); });
+cv.addEventListener('pointermove', e => { if (!dragging) return;
+  const dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY;
+  rotY -= dx*SENS; rotX -= dy*SENS;
+  vY = vY*.5 - dx*SENS*.5; vX = vX*.5 - dy*SENS*.5; });                // guarda velocidad para la inercia
+const release = () => { dragging = false; cv.classList.remove('drag'); };
+cv.addEventListener('pointerup', release); cv.addEventListener('pointercancel', release);
+cv.addEventListener('wheel', e => { e.preventDefault(); zoom = Math.max(.6, Math.min(1.8, zoom - e.deltaY*.001)); }, {passive:false});
+
+/* ---------- Pantalla, carta e inicio ---------- */
+function resize(){
+  const dpr = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cx = W/2; cy = H*.5;
+  cv.width = W*dpr; cv.height = H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); build();
+}
+const show = () => $('love-letter-overlay').classList.add('show');
+const hide = () => $('love-letter-overlay').classList.remove('show');
+$('start-screen').addEventListener('click', () => {
+  const music = $('music'); music.volume = .85; music.play().catch(() => {});
+  $('start-screen').classList.add('hidden'); started = true;
+  $('title').classList.add('show'); $('open-btn').classList.add('show');
+  setTimeout(() => $('hint').classList.add('show'), 3500); setTimeout(() => $('hint').classList.remove('show'), 12000);
+  setInterval(() => { shapeIdx = (shapeIdx+1) % SHAPES.length; morph(false); }, 7000);
+  setTimeout(show, LETTER_DELAY);
+}, {once:true});
+$('open-btn').addEventListener('click', show);
+$('close-btn').addEventListener('click', hide);
+addEventListener('resize', resize);
+(document.fonts && document.fonts.load ? document.fonts.load('20px "Indie Flower"') : Promise.resolve())
+  .catch(() => {}).then(() => { resize(); requestAnimationFrame(frame); });
+})();
+</script>
+</body>
+</html>
